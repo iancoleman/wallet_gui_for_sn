@@ -3,8 +3,9 @@
     let addressEl;
 
     async function getAddress() {
-      //greetMsgEl.textContent = await invoke("get_address", { _wallet_name: greetInputEl.value });
-      let address = await invoke("get_address");
+      let address = await invoke("get_address", {
+          walletName: "default_wallet",
+      });
       addressEl.textContent = address;
       new QRCode(document.getElementById("qrcode"), address);
     }

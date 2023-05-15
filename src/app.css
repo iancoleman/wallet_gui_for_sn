@@ -22,3 +22,8 @@
 .hidden {
     display: none;
 }
+
+#mnemonic {
+    font-family: monospace;
+    padding: 20px;
+}
