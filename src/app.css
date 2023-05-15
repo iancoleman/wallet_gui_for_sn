@@ -1,0 +1,20 @@
+/* https://flatuicolors.com/palette/in */
+
+.nav div {
+    display: inline-block;
+    margin: 0;
+    padding: 10px 15px;
+    border-right: 1px solid #999;
+}
+
+.nav .active {
+    background-color: #55E6C1;
+}
+
+#address {
+    font-size: 14px;
+}
+
+#qrcode {
+    margin: 10px;
+}
