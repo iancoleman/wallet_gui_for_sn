@@ -4,7 +4,7 @@
     display: inline-block;
     margin: 0;
     padding: 10px 15px;
-    border-right: 1px solid #999;
+    cursor: pointer;
 }
 
 .nav .active {
@@ -17,4 +17,8 @@
 
 #qrcode {
     margin: 10px;
+}
+
+.hidden {
+    display: none;
 }

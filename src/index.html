@@ -13,15 +13,34 @@
         <div class="nav">
             <div class="receive active">Receive</div>
             <div class="send">Send</div>
-            <div class="send">Save</div>
+            <div class="save">Save</div>
             <div class="load">Load</div>
+            <div class="network">Network</div>
         </div>
-        <div id="qrcode"></div>
-      <div id="address"></div>
+        <div class="panes">
+            <div class="receive">
+                <div id="qrcode"></div>
+                <div id="address"></div>
+            </div>
+            <div class="send hidden">
+                <h1>Send</h1>
+            </div>
+            <div class="save hidden">
+                <h1>Save</h1>
+            </div>
+            <div class="load hidden">
+                <h1>Load</h1>
+            </div>
+            <div class="network hidden">
+                <h1>Network</h1>
+            </div>
+        </div>
     </div>
 
     <script src="qrcode.js"></script>
-    <script src="/main.js"></script>
+    <script src="main.js"></script>
+    <script src="nav.js"></script>
+    <script src="receive.js"></script>
 
   </body>
 </html>
