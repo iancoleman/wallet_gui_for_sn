@@ -19,8 +19,8 @@
     let tabPanes = [
         new TabPane(".receive"),
         new TabPane(".send"),
-        new TabPane(".save"),
-        new TabPane(".load"),
+        new TabPane(".backup"),
+        new TabPane(".restore"),
         new TabPane(".network"),
     ];
 
