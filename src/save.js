@@ -1,21 +1,25 @@
 (function() {
 
-    let mnemonicEl;
+    let nameEl, mnemonicEl, passwordEl, decryptEl;
 
     async function getMnemonic() {
         // clear any existing mnemonic
         mnemonicEl.innerHTML = "";
         // get the mnemonic from the rust backend
         let mnemonic = await invoke("get_mnemonic", {
-            walletName: "default_wallet",
+            walletName: nameEl.value,
+            decryptor: passwordEl.value,
         });
         // show the mnemonic
         mnemonicEl.textContent = mnemonic;
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-      mnemonicEl = document.querySelector("#mnemonic");
-      getMnemonic();
+      nameEl = document.getElementById("wallet-name");
+      mnemonicEl = document.getElementById("mnemonic");
+      passwordEl = document.getElementById("save-password");
+      decryptEl = document.getElementById("decrypt");
+      decryptEl.addEventListener("click", getMnemonic);
     });
 
 })()
