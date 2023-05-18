@@ -88,11 +88,13 @@ fn get_entropy(name: &str, decryptor: &str) -> Vec<u8> {
 
 fn mnemonic_from_entropy(entropy: Vec<u8>) -> Mnemonic {
     // convert entropy to mnemonic
+    // TODO remove unwrap below
     Mnemonic::from_entropy(&entropy).unwrap()
 }
 
 #[tauri::command]
 fn get_mnemonic(wallet_name: &str, decryptor: &str) -> String {
+    // TODO check decryptor is correct by comparing with wallet.decryptor_hash
     let entropy = get_entropy(wallet_name, decryptor);
     mnemonic_from_entropy(entropy).to_string()
 }
@@ -182,7 +184,7 @@ fn stretch_password(password: &str) -> String {
 }
 
 fn create_wallet(name: &str, decryptor: &str) {
-    // if wallet file doesn't exist, generate entropy
+    // create entropy for a certain number of bip39 words
     let words = 24;
     let entropy_bits = words * 11 * 32 / 33;
     let entropy_bytes = entropy_bits / 8;
@@ -218,7 +220,7 @@ fn create_wallet(name: &str, decryptor: &str) {
         addresses: addresses,
         encrypted_entropy: encrypted_entropy,
         checksum: Vec::<u8>::new(),
-        decryptor_hash: "".to_string(),
+        decryptor_hash: stretch_password(decryptor),
     };
     // serialize the wallet
     // TODO remove the unwrap below
