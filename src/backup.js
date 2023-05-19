@@ -14,6 +14,10 @@
         mnemonicEl.textContent = mnemonic;
     }
 
+    function clearMnemonic() {
+        mnemonicEl.textContent = "";
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
       nameEl = document.getElementById("wallet-name");
       mnemonicEl = document.getElementById("mnemonic");
@@ -21,5 +25,7 @@
       decryptEl = document.getElementById("decrypt");
       decryptEl.addEventListener("click", getMnemonic);
     });
+
+    window.addEventListener("tab-changed", clearMnemonic);
 
 })()

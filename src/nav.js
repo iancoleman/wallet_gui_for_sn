@@ -2,6 +2,7 @@
 
     let nav = document.querySelectorAll(".nav")[0];
     let panes = document.querySelectorAll(".panes")[0];
+    let tabChanged = new Event("tab-changed");
 
     function TabPane(selector) {
 
@@ -13,6 +14,7 @@
             hideAllPanes();
             self.pane.classList.remove("hidden");
             self.tab.classList.add("active");
+            window.dispatchEvent(tabChanged);
         });
     }
 
