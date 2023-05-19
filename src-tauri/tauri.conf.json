@@ -42,6 +42,12 @@
       "identifier": "com.example",
       "targets": "all"
     },
+    "pattern": {
+      "use": "isolation",
+      "options": {
+        "dir": "../src-isolation"
+      }
+    },
     "security": {
       "csp": null
     },
