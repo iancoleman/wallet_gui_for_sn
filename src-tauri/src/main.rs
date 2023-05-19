@@ -3,11 +3,11 @@
 
 use aes_gcm_siv::{
     aead::{Aead, KeyInit},
-    Aes256GcmSiv, Nonce // Or `Aes128GcmSiv`
+    Aes256GcmSiv, Nonce
 };
 use argon2::{
     password_hash::{
-        PasswordHash, PasswordHasher, SaltString
+        PasswordHash, PasswordHasher, Salt
     },
     Argon2
 };
@@ -61,72 +61,37 @@ struct Wallet {
     decryptor_hash: String,
 }
 
-fn get_entropy(name: &str, decryptor: &str) -> Vec<u8> {
-    // TODO store and retrieve entropy with encryption
-    // TODO think about where to store the wallet file, eg $APP
-    // if this wallet file exists, return the entropy for it
-    let wallet_location = wallet_file_path(name);
-    match File::open(wallet_location) {
-        Ok(mut file) => {
-            let mut wallet_content = Vec::new();
-            match file.read_to_end(&mut wallet_content) {
-                Ok(_) => {
-                    // TODO remove unwrap in line below
-                    let wallet: Wallet = rmp_serde::from_slice(&wallet_content).unwrap();
-                    decrypt_entropy(wallet.encrypted_entropy, decryptor)
-                },
-                Err(_) => Vec::<u8>::new(), // TODO return an error
-            }
-        }
-        Err(_) => {
-            // TODO decide if creating a new wallet is the right idea here
-            // or if it should show an error like 'wallet not found'
-            create_random_wallet(name, decryptor);
-            get_entropy(name, decryptor)
-        }
-    }
+fn get_entropy(name: &str, decryptor: &str) -> Result<Vec<u8>, String> {
+    let wallet = read_wallet(name)?;
+    decrypt_entropy(wallet.encrypted_entropy, decryptor)
 }
 
-fn mnemonic_from_entropy(entropy: Vec<u8>) -> Mnemonic {
+fn mnemonic_from_entropy(entropy: Vec<u8>) -> Result<Mnemonic, String> {
     // convert entropy to mnemonic
-    // TODO remove unwrap below
-    Mnemonic::from_entropy(&entropy).unwrap()
-}
-
-#[tauri::command]
-fn get_mnemonic(wallet_name: &str, decryptor: &str) -> String {
-    // TODO check decryptor is correct by comparing with wallet.decryptor_hash
-    let entropy = get_entropy(wallet_name, decryptor);
-    mnemonic_from_entropy(entropy).to_string()
-}
-
-#[tauri::command]
-fn get_address(wallet_name: &str) -> String {
-    let wallet_location = wallet_file_path(wallet_name);
-    match File::open(wallet_location) {
-        Ok(mut file) => {
-            let mut wallet_content = Vec::new();
-            match file.read_to_end(&mut wallet_content) {
-                Ok(_) => {
-                    // TODO remove unwrap in line below
-                    let wallet: Wallet = rmp_serde::from_slice(&wallet_content).unwrap();
-                    // TODO remove clone below
-                    hex::encode(wallet.addresses[0].clone())
-                },
-                Err(_) => {
-                    // TODO revise this error message
-                    "No valid address found for this wallet".to_string()
-                }
-            }
-        }
-        Err(_) => {
-            // TODO decide if creating a new wallet is the right idea here
-            // or whether there should be an error like 'wallet not found'
-            let default_password = "insecure_default_password";
-            create_random_wallet(wallet_name, default_password);
-            get_address(wallet_name)
-        }
+    match Mnemonic::from_entropy(&entropy) {
+        Ok(m) => Ok(m),
+        Err(_) => Err("Error converting entropy to mnemonic".to_string())
     }
+}
+
+#[tauri::command]
+fn get_mnemonic(wallet_name: &str, decryptor: &str) -> Result<String, String> {
+    // TODO check decryptor is correct by comparing with wallet.decryptor_hash
+    let entropy = get_entropy(wallet_name, decryptor)?;
+    let mnemonic = mnemonic_from_entropy(entropy)?;
+    Ok(mnemonic.to_string())
+}
+
+#[tauri::command]
+fn get_address(wallet_name: &str) -> Result<String, String> {
+    let wallet = read_wallet(wallet_name)?;
+    Ok(hex::encode(&wallet.addresses[0]))
+}
+
+#[tauri::command]
+fn new_wallet(name: &str, decryptor: &str) -> Result<String, String> {
+    create_random_wallet(name, decryptor);
+    Ok(name.to_string())
 }
 
 fn main() {
@@ -134,6 +99,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_address,
             get_mnemonic,
+            new_wallet,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -143,46 +109,60 @@ fn secret_key_to_public_key(sk: FieldScalar) -> GE1 {
     ECPoint::generator_mul(&sk)
 }
 
-fn encrypt_entropy(decrypted_entropy: Vec<u8>, decryptor: &str) -> Vec<u8> {
+fn encrypt_entropy(decrypted_entropy: Vec<u8>, decryptor: &str) -> Result<Vec<u8>, String> {
+    // use argon2 hash of the decryptor as a symmetric key
     // hash the decryptor
-    let stretched = stretch_password(decryptor);
-    // TODO remove unwrap below
-    let hash = PasswordHash::new(&stretched).unwrap().hash.unwrap();
-    // use the hash with aes-gcm-siv to encrypt the entropy
-    let cipher = Aes256GcmSiv::new(hash.as_bytes().into());
+    let cipher = symmetric_key_from_password(decryptor)?;
     // Using the same nonce across multiple messages is ok with siv, but would
     // not be ok with standard aes-gcm.
     // https://crypto.stackexchange.com/q/102334
     let nonce = Nonce::from_slice(b"unique nonce");
-    // TODO remove unwrap below
-    let encrypted_entropy = cipher.encrypt(nonce, decrypted_entropy.as_slice()).unwrap();
-    encrypted_entropy
+    // encrypt the entropy
+    match cipher.encrypt(nonce, decrypted_entropy.as_slice()) {
+        Ok(decrypted_entropy) => Ok(decrypted_entropy),
+        Err(_) => Err("Error encrypting entropy".to_string()),
+    }
 }
 
-fn decrypt_entropy(encrypted_entropy: Vec<u8>, decryptor: &str) -> Vec<u8> {
+fn decrypt_entropy(encrypted_entropy: Vec<u8>, decryptor: &str) -> Result<Vec<u8>, String> {
+    // use argon2 hash of the decryptor as a symmetric key
     // hash the decryptor
-    let stretched = stretch_password(decryptor);
-    // TODO remove unwrap below
-    let hash = PasswordHash::new(&stretched).unwrap().hash.unwrap();
-    // use the hash with aes-gcm-siv to decrypt the entropy
-    let cipher = Aes256GcmSiv::new(hash.as_bytes().into());
+    let cipher = symmetric_key_from_password(decryptor)?;
     // Using the same nonce across multiple messages is ok with siv, but would
     // not be ok with standard aes-gcm.
     // https://crypto.stackexchange.com/q/102334
     let nonce = Nonce::from_slice(b"unique nonce");
-    // TODO remove unwrap below
-    let decrypted_entropy = cipher.decrypt(nonce, encrypted_entropy.as_slice()).unwrap();
-    decrypted_entropy
+    // decrypt the entropy
+    match cipher.decrypt(nonce, encrypted_entropy.as_slice()) {
+        Ok(decrypted_entropy) => Ok(decrypted_entropy),
+        Err(_) => Err("Error decrypting entropy".to_string()),
+    }
 }
 
-fn stretch_password(password: &str) -> String {
+fn stretch_password(password: &str) -> Result<PasswordHash, String> {
     // TODO confirm if fixed salt is ok here
-    // TODO remove unwrap below
-    let salt = SaltString::from_b64("d2FsbGV0d2FsbGV0d2FsbGV0").unwrap();
+    let salt = match Salt::from_b64("d2FsbGV0d2FsbGV0d2FsbGV0"){
+        Ok(salt) => salt,
+        Err(_) => return Err("Error creating salt for decryption".to_string()),
+    };
     let argon2 = Argon2::default();
-    // TODO remove unwrap below
-    let hash = argon2.hash_password(password.as_bytes(), &salt).unwrap();
-    hash.to_string()
+    match argon2.hash_password(password.as_bytes(), salt) {
+        Ok(hash) => Ok(hash),
+        Err(_) => Err("Error hashing password".to_string())
+    }
+}
+
+fn symmetric_key_from_password(password: &str) -> Result<Aes256GcmSiv, String> {
+    let argon = stretch_password(password)?;
+    let hash: Vec<u8> = match argon.hash {
+        Some(hash) => hash.as_bytes().into(),
+        None => return Err("Hash error".to_string()),
+    };
+    // use the hash with aes-gcm-siv to create a symmetric cipher
+    match Aes256GcmSiv::new_from_slice(&hash) {
+        Ok(cipher) => Ok(cipher),
+        Err(_) => Err("Error creating symmetric key".to_string()),
+    }
 }
 
 fn create_random_wallet(name: &str, decryptor: &str) {
@@ -195,8 +175,8 @@ fn create_random_wallet(name: &str, decryptor: &str) {
     // TODO Check that thread_rng is secure enough
     rand::thread_rng().fill_bytes(&mut entropy);
     // convert entropy to mnemonic
-    // TODO remove clone
-    let m = mnemonic_from_entropy(entropy.clone());
+    // TODO remove clone and unwrap
+    let m = mnemonic_from_entropy(entropy.clone()).unwrap();
     // convert mnemonic to seed
     let bip39_password = "";
     let seed = m.to_seed(bip39_password);
@@ -214,15 +194,17 @@ fn create_random_wallet(name: &str, decryptor: &str) {
         addresses.push(address);
     }
     // encrypt the entropy before saving
-    // TODO remove clone below
-    let encrypted_entropy = encrypt_entropy(entropy.clone(), decryptor);
+    // TODO remove clone and unwrap below
+    let encrypted_entropy = encrypt_entropy(entropy.clone(), decryptor).unwrap();
+    // TODO remove unwrap below
+    let decryptor_hash = stretch_password(decryptor).unwrap().to_string();
     // create a wallet from this info
     let wallet = Wallet {
         name: name.to_string(),
         addresses: addresses,
         encrypted_entropy: encrypted_entropy,
         checksum: Vec::<u8>::new(),
-        decryptor_hash: stretch_password(decryptor),
+        decryptor_hash: decryptor_hash,
     };
     // serialize the wallet
     // TODO remove the unwrap below
@@ -246,4 +228,29 @@ fn wallet_file_path(name: &str) -> String {
         fs::create_dir_all("wallets").unwrap();
     }
     Path::new("wallets").join(name).to_str().unwrap().to_string()
+}
+
+
+fn read_wallet(name: &str) -> Result<Wallet, String> {
+    let wallet_location = wallet_file_path(name);
+    // open file
+    let mut file = match File::open(wallet_location) {
+        Ok(file) => file,
+        Err(_) => {
+            return Err("Error opening wallet file".to_string())
+        }
+    };
+    // read file
+    let mut wallet_content = Vec::new();
+    match file.read_to_end(&mut wallet_content) {
+        Ok(_) => {},
+        Err(_) => {
+            return Err("Error reading wallet file".to_string())
+        }
+    }
+    // parse file
+    match rmp_serde::from_slice(&wallet_content) {
+        Ok(w) => Ok(w),
+        Err(_) => return Err("Error parsing wallet file".to_string())
+    }
 }
