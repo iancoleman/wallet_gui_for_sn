@@ -22,7 +22,7 @@ use curv::elliptic::curves::{
 };
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
-use std::{fs::File, io::{Read, Write}};
+use std::{fs, fs::File, io::{Read, Write}, path::Path};
 
 // The number of unused addresses to keep in the wallet.
 // This allows the recipient to receive funds without needing to decrypt
@@ -65,7 +65,8 @@ fn get_entropy(name: &str, decryptor: &str) -> Vec<u8> {
     // TODO store and retrieve entropy with encryption
     // TODO think about where to store the wallet file, eg $APP
     // if this wallet file exists, return the entropy for it
-    match File::open(name) {
+    let wallet_location = wallet_file_path(name);
+    match File::open(wallet_location) {
         Ok(mut file) => {
             let mut wallet_content = Vec::new();
             match file.read_to_end(&mut wallet_content) {
@@ -80,7 +81,7 @@ fn get_entropy(name: &str, decryptor: &str) -> Vec<u8> {
         Err(_) => {
             // TODO decide if creating a new wallet is the right idea here
             // or if it should show an error like 'wallet not found'
-            create_wallet(name, decryptor);
+            create_random_wallet(name, decryptor);
             get_entropy(name, decryptor)
         }
     }
@@ -101,7 +102,8 @@ fn get_mnemonic(wallet_name: &str, decryptor: &str) -> String {
 
 #[tauri::command]
 fn get_address(wallet_name: &str) -> String {
-    match File::open(wallet_name) {
+    let wallet_location = wallet_file_path(wallet_name);
+    match File::open(wallet_location) {
         Ok(mut file) => {
             let mut wallet_content = Vec::new();
             match file.read_to_end(&mut wallet_content) {
@@ -121,7 +123,7 @@ fn get_address(wallet_name: &str) -> String {
             // TODO decide if creating a new wallet is the right idea here
             // or whether there should be an error like 'wallet not found'
             let default_password = "insecure_default_password";
-            create_wallet(wallet_name, default_password);
+            create_random_wallet(wallet_name, default_password);
             get_address(wallet_name)
         }
     }
@@ -183,7 +185,7 @@ fn stretch_password(password: &str) -> String {
     hash.to_string()
 }
 
-fn create_wallet(name: &str, decryptor: &str) {
+fn create_random_wallet(name: &str, decryptor: &str) {
     // create entropy for a certain number of bip39 words
     let words = 24;
     let entropy_bits = words * 11 * 32 / 33;
@@ -227,6 +229,21 @@ fn create_wallet(name: &str, decryptor: &str) {
     let wallet_bytes = rmp_serde::to_vec(&wallet).unwrap();
     // save this wallet for later use
     // TODO remove these unwraps and return an error
-    let mut file = File::create(name).unwrap();
+    let wallet_location = wallet_file_path(name);
+    let mut file = File::create(wallet_location).unwrap();
     file.write_all(&wallet_bytes).unwrap();
+}
+
+fn wallet_file_path(name: &str) -> String {
+    // TODO validate this for bad chars, or is this automatic from tauri?
+    // see https://tauri.app/v1/api/js/fs/#security
+    // TODO consider if file read/write should be in the javascript, since it
+    // seems to have the most docs, and the rust file api within tauri is quite
+    // minimal. I prefer to keep as much of the key logic in rust, and avoid
+    // exposing the javascript/webview to any secrets as much as possible.
+    // TODO remove unwraps below
+    if !Path::new("wallets").exists() {
+        fs::create_dir_all("wallets").unwrap();
+    }
+    Path::new("wallets").join(name).to_str().unwrap().to_string()
 }

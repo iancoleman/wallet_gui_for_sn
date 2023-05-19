@@ -13,6 +13,18 @@
   "tauri": {
     "allowlist": {
       "all": false,
+      "fs": {
+        "readFile": true,
+        "writeFile": true,
+        "readDir": true,
+        "copyFile": false,
+        "createDir": true,
+        "removeDir": false,
+        "removeFile": false,
+        "renameFile": false,
+        "exists": true,
+        "scope": [ "wallet/*" ]
+      },
       "shell": {
         "all": false,
         "open": true
