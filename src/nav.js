@@ -4,11 +4,14 @@
     let panes = document.querySelectorAll(".panes")[0];
     let tabChanged = new Event("tab-changed");
 
-    function TabPane(selector) {
+    function TabPane(tabEl) {
+
+        let selector = tabEl.getAttribute("clickable-tab");
+        let paneEl = document.querySelector("[tab-pane='" + selector + "']");
 
         let self = this;
-        self.tab = nav.querySelectorAll(selector)[0];
-        self.pane = panes.querySelectorAll(selector)[0];
+        self.tab = tabEl;
+        self.pane = paneEl;
 
         self.tab.addEventListener("click", function() {
             hideAllPanes();
@@ -16,20 +19,22 @@
             self.tab.classList.add("active");
             window.dispatchEvent(tabChanged);
         });
+
+        self.hide = function() {
+            self.pane.classList.add("hidden");
+            self.tab.classList.remove("active");
+        }
     }
 
-    let tabPanes = [
-        new TabPane(".receive"),
-        new TabPane(".send"),
-        new TabPane(".backup"),
-        new TabPane(".restore"),
-        new TabPane(".network"),
-    ];
+    let tabPaneEls = Array.from(document.querySelectorAll("[clickable-tab]"));
+
+    let tabPanes = tabPaneEls.map((e) => {
+        return new TabPane(e);
+    });
 
     function hideAllPanes() {
         tabPanes.map((tp) => {
-            tp.pane.classList.add("hidden");
-            tp.tab.classList.remove("active");
+            tp.hide()
         });
     }
 

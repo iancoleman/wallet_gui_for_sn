@@ -11,55 +11,114 @@
   <body>
     <div class="container">
         <div class="nav">
-            <div class="receive active">Receive</div>
-            <div class="send">Send</div>
-            <div class="backup">Backup</div>
-            <div class="restore">Restore</div>
-            <div class="network">Network</div>
+            <!--
+                When adding a tab here:
+                Create a tab with a unique name for the clickable-tab property.
+                Create a corresponding pane with the same name as the tab-pane
+                property.
+                This will automatically show the pane when the tab is clicked,
+                see nav.js
+            -->
+            <div class="wallets active" clickable-tab="wallets">Wallets</div>
+            <div class="receive" clickable-tab="receive">Receive</div>
+            <div class="send" clickable-tab="send">Send</div>
+            <div class="backup" clickable-tab="backup">Backup</div>
+            <div class="network" clickable-tab="network">Network</div>
         </div>
         <div class="panes">
-            <div class="receive">
-                <div id="qrcode"></div>
-                <div id="address"></div>
+            <div class="wallets" tab-pane="wallets">
+                <h1>Wallets</h1>
+                <div class="existing">
+                    No wallets yet
+                </div>
+                <h2>New Wallet</h2>
+                <div class="new">
+                    <table>
+                        <tr>
+                            <td>Name:</td>
+                            <td>
+                                <input class="name" type="text" value="default_wallet">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Password:</td>
+                            <td>
+                                <input class="password" type="text" value="insecure_default_password">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Mnemonic:</td>
+                            <td>
+                                <label>
+                                    <input type="radio" name="new-mnemonic" checked>
+                                    Secure random mnemonic
+                                </label>
+                                <label>
+                                    <input type="radio" name="new-mnemonic" selected>
+                                    Enter a mnemonic
+                                </label>
+                                <textarea class="mnemonic hidden"></textarea>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <button>Create</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
-            <div class="send hidden">
+            <div class="receive hidden" tab-pane="receive">
+                <div class="qrcode"></div>
+                <div class="address"></div>
+            </div>
+            <div class="send hidden" tab-pane="send">
                 <h1>Send</h1>
             </div>
-            <div class="backup hidden">
+            <div class="backup hidden" tab-pane="backup">
                 <table>
                     <tr>
                         <td>Name:</td>
                         <td>
-                            <input id="wallet-name" value="default_wallet">
+                            <span class="name">default_wallet</span>
                         </td>
                     </tr>
                     <tr>
                         <td>Password:</td>
                         <td>
-                            <input id="save-password" value="insecure_default_password">
+                            <input class="password" value="insecure_default_password">
                         </td>
                     </tr>
                     <tr>
                         <td></td>
                         <td>
-                            <button id="decrypt">Decrypt</button>
+                            <button class="decrypt">Decrypt</button>
                         </td>
                     </tr>
                 </table>
-                <div id="mnemonic"></div>
+                <div class="mnemonic"></div>
             </div>
-            <div class="restore hidden">
-                <h1>Restore</h1>
-            </div>
-            <div class="network hidden">
+            <div class="network hidden" tab-pane="network">
                 <h1>Network</h1>
             </div>
         </div>
     </div>
 
+    <script type="text/template" id="existing-wallet-template">
+        <div class="wallet">
+            <label>
+            <input type="radio" name="wallet">
+            <span class="name"></span>
+            </div>
+        </div>
+    </script>
+
     <script src="qrcode.js"></script>
     <script src="main.js"></script>
     <script src="nav.js"></script>
+    <script src="wallets.js"></script>
+    <script src="wallet.js"></script>
     <script src="receive.js"></script>
     <script src="backup.js"></script>
 

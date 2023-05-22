@@ -1,18 +1,28 @@
 (function() {
 
-    let addressEl;
+    let addressEl, qrEl;
 
-    async function getAddress() {
-      let address = await invoke("get_address", {
-          walletName: "default_wallet",
-      });
-      addressEl.textContent = address;
-      new QRCode(document.getElementById("qrcode"), address);
+    async function getAddress(name) {
+        let address = await invoke("get_address", {
+            walletName: name,
+        });
+        addressEl.textContent = address;
+        qrEl.innerHTML = "";
+        new QRCode(qrEl, address);
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-      addressEl = document.querySelector("#address");
-      getAddress();
+        addressEl = document.querySelector(".receive .address");
+        qrEl = document.querySelector(".receive .qrcode");
+    });
+
+    window.addEventListener("wallet-loaded", (e) => {
+        let wallet = e.detail;
+        // show the current receive address
+        getAddress(wallet.name);
+        // TODO
+        // show the balance
+        // show the tx history
     });
 
 })()

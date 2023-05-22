@@ -29,6 +29,8 @@ use std::{fs, fs::File, io::{Read, Write}, path::Path};
 // the entropy each time.
 const ADDRESS_GAP: u64 = 20;
 
+const WALLET_DIR: &str = "wallets";
+
 #[derive(Serialize, Deserialize)]
 struct Wallet {
     // The plain language name for the wallet.
@@ -75,6 +77,32 @@ fn mnemonic_from_entropy(entropy: Vec<u8>) -> Result<Mnemonic, String> {
 }
 
 #[tauri::command]
+fn get_wallet_list() -> Result<Vec<String>, String> {
+    ensure_wallet_dir_exists();
+    let paths = match fs::read_dir(WALLET_DIR) {
+        Ok(p) => p,
+        Err(_) => return Err("Error reading wallet directory".to_string()),
+    };
+    let mut wallet_names = Vec::<String>::new();
+    for wallet_name in paths {
+        match wallet_name {
+            Ok(os_filename) => {
+                match os_filename.file_name().into_string() {
+                    Ok(filename) => {
+                        // TODO check this is a valid wallet, ie it can be
+                        // parsed etc
+                        wallet_names.push(filename)
+                    },
+                    Err(_) => { /* ignore unreadable wallet names */ }
+                }
+            },
+            Err(_) => { /* ignore error, probably should do something */ },
+        }
+    }
+    Ok(wallet_names)
+}
+
+#[tauri::command]
 fn get_mnemonic(wallet_name: &str, decryptor: &str) -> Result<String, String> {
     // TODO check decryptor is correct by comparing with wallet.decryptor_hash
     let entropy = get_entropy(wallet_name, decryptor)?;
@@ -100,6 +128,7 @@ fn main() {
             get_address,
             get_mnemonic,
             new_wallet,
+            get_wallet_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -224,12 +253,15 @@ fn wallet_file_path(name: &str) -> String {
     // minimal. I prefer to keep as much of the key logic in rust, and avoid
     // exposing the javascript/webview to any secrets as much as possible.
     // TODO remove unwraps below
-    if !Path::new("wallets").exists() {
-        fs::create_dir_all("wallets").unwrap();
-    }
-    Path::new("wallets").join(name).to_str().unwrap().to_string()
+    ensure_wallet_dir_exists();
+    Path::new(WALLET_DIR).join(name).to_str().unwrap().to_string()
 }
 
+fn ensure_wallet_dir_exists() {
+    if !Path::new(WALLET_DIR).exists() {
+        fs::create_dir_all(WALLET_DIR).unwrap();
+    }
+}
 
 fn read_wallet(name: &str) -> Result<Wallet, String> {
     let wallet_location = wallet_file_path(name);

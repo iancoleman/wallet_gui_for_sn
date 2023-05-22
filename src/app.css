@@ -1,5 +1,14 @@
 /* https://flatuicolors.com/palette/in */
 
+.hidden {
+    display: none;
+}
+
+td {
+    vertical-align: top;
+    padding: 10px;
+}
+
 .nav div {
     display: inline-block;
     margin: 0;
@@ -11,19 +20,19 @@
     background-color: #55E6C1;
 }
 
-#address {
+.wallets label {
+    display: block;
+}
+
+.receive .address {
     font-size: 14px;
 }
 
-#qrcode {
+.receive .qrcode {
     margin: 10px;
 }
 
-.hidden {
-    display: none;
-}
-
-#mnemonic {
+.backup .mnemonic {
     font-family: monospace;
     padding: 20px;
 }
@@ -32,6 +41,7 @@
     padding: 5px 20px;
 }
 
-.backup input {
+.backup input,
+.new input[type="text"] {
     width: 300px;
 }
