@@ -9,6 +9,14 @@ td {
     padding: 10px;
 }
 
+.error {
+    color: #FD7272;
+}
+
+.warning {
+    color: #F97F51;
+}
+
 .nav div {
     display: inline-block;
     margin: 0;

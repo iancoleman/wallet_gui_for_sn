@@ -28,7 +28,7 @@
         <div class="panes">
             <div class="wallets" tab-pane="wallets">
                 <h1>Wallets</h1>
-                <div class="existing">
+                <div class="list">
                     No wallets yet
                 </div>
                 <h2>New Wallet</h2>
@@ -50,11 +50,11 @@
                             <td>Mnemonic:</td>
                             <td>
                                 <label>
-                                    <input type="radio" name="new-mnemonic" checked>
+                                    <input class="random" type="radio" name="mnemonic" checked>
                                     Secure random mnemonic
                                 </label>
                                 <label>
-                                    <input type="radio" name="new-mnemonic" selected>
+                                    <input class="direct" type="radio" name="mnemonic">
                                     Enter a mnemonic
                                 </label>
                                 <textarea class="mnemonic hidden"></textarea>
@@ -63,7 +63,9 @@
                         <tr>
                             <td></td>
                             <td>
-                                <button>Create</button>
+                                <div class="warning"></div>
+                                <div class="error"></div>
+                                <button class="create">Create</button>
                             </td>
                         </tr>
                     </table>
