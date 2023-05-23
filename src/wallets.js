@@ -61,11 +61,18 @@
         // all in one place (ie rust, not javascript).
         // send to backend for creating
         if (directRadio.checked) {
-            await invoke("restore_wallet");
+            await invoke("restore_wallet", {
+                name: name,
+                decryptor: password,
+                mnemonic: mnemonic,
+            });
             // TODO show error or success
         }
         else {
-            let mnemonic = await invoke("create_new_random_wallet");
+            let mnemonic = await invoke("create_new_random_wallet", {
+                name: name,
+                decryptor: password,
+            });
             // TODO show mnemonic so a backup can be created
         }
     }

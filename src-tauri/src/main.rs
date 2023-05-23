@@ -116,18 +116,13 @@ fn get_address(wallet_name: &str) -> Result<String, String> {
     Ok(hex::encode(&wallet.addresses[0]))
 }
 
-#[tauri::command]
-fn new_wallet(name: &str, decryptor: &str) -> Result<String, String> {
-    create_random_wallet(name, decryptor);
-    Ok(name.to_string())
-}
-
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             get_address,
             get_mnemonic,
-            new_wallet,
+            create_new_random_wallet,
+            restore_wallet,
             get_wallet_list,
         ])
         .run(tauri::generate_context!())
@@ -194,7 +189,18 @@ fn symmetric_key_from_password(password: &str) -> Result<Aes256GcmSiv, String> {
     }
 }
 
-fn create_random_wallet(name: &str, decryptor: &str) {
+#[tauri::command]
+fn restore_wallet(name: &str, decryptor: &str, mnemonic: &str) -> Result<String, String> {
+    // parse mnemonic
+    // TODO remove unwrap
+    let m = Mnemonic::parse(mnemonic).unwrap();
+    // TODO use result
+    create_wallet_from_mnemonic(m, name, decryptor);
+    Ok("".to_string())
+}
+
+#[tauri::command]
+fn create_new_random_wallet(name: &str, decryptor: &str) -> Result<String, String> {
     // create entropy for a certain number of bip39 words
     let words = 24;
     let entropy_bits = words * 11 * 32 / 33;
@@ -206,6 +212,13 @@ fn create_random_wallet(name: &str, decryptor: &str) {
     // convert entropy to mnemonic
     // TODO remove clone and unwrap
     let m = mnemonic_from_entropy(entropy.clone()).unwrap();
+    create_wallet_from_mnemonic(m.clone(), name, decryptor);
+    Ok(m.to_string())
+}
+
+fn create_wallet_from_mnemonic(m: Mnemonic, name: &str, decryptor: &str) {
+    // convert mnemonic to entropy
+    let entropy = m.to_entropy();
     // convert mnemonic to seed
     let bip39_password = "";
     let seed = m.to_seed(bip39_password);
