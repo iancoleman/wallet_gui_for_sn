@@ -27,7 +27,6 @@
         </div>
         <div class="panes">
             <div class="wallets" tab-pane="wallets">
-                <h1>Wallets</h1>
                 <div class="list">
                     No wallets yet
                 </div>
@@ -76,7 +75,59 @@
                 <div class="address"></div>
             </div>
             <div class="send hidden" tab-pane="send">
-                <h1>Send</h1>
+                <h2>Balance</h2>
+                <span class="hint">
+                    Amount available to spend
+                </span>
+                <div>
+                    <span class="balance">0</span>
+                    nanos
+                </div>
+                <h2>Inputs</h2>
+                <span class="hint">
+                    The DBCs to be spent
+                </span>
+                <div>
+                    <label>
+                        <input type="radio" name="inputs" class="automatic" checked>
+                        Automatic selection
+                    </label>
+                    <label>
+                        <input type="radio" name="inputs" class="manual">
+                        Manual selection
+                    </label>
+                    <div class="dbc-list hidden">
+                        <!-- populated by javascript -->
+                        TODO
+                    </div>
+                </div>
+                <h2>Recipients</h2>
+                <span class="hint">
+                    Who will receive how much
+                </span>
+                <div class="recipients">
+                    <p>
+                    List of amount (in nanos) and addresses,
+                    one per line,
+                    comma separated values.
+                    </p>
+                    <textarea placeholder="amount,address"></textarea>
+                </div>
+                <div class="change hidden">
+                    <p>Change will go to:</p>
+                    <textarea readonly></textarea>
+                </div>
+                <h2>Fees</h2>
+                <span class="hint">
+                    How much fee to pay and who does it go to
+                </span>
+                <div class="fees">
+                    TODO
+                </div>
+                <h2>Sign</h2>
+                <button class="sign">Sign</button>
+                <h2>Broadcast</h2>
+                <textarea class="broadcast" placeholder="Transaction hex"></textarea>
             </div>
             <div class="backup hidden" tab-pane="backup">
                 <table>
@@ -122,6 +173,7 @@
     <script src="wallets.js"></script>
     <script src="wallet.js"></script>
     <script src="receive.js"></script>
+    <script src="send.js"></script>
     <script src="backup.js"></script>
 
   </body>

@@ -5,7 +5,10 @@
 }
 
 td {
-    vertical-align: top;
+    padding: 10px;
+}
+
+[tab-pane] {
     padding: 10px;
 }
 
@@ -28,7 +31,8 @@ td {
     background-color: #55E6C1;
 }
 
-.wallets label {
+.wallets label,
+.send label {
     display: block;
 }
 
@@ -52,4 +56,13 @@ td {
 .backup input,
 .new input[type="text"] {
     width: 300px;
+}
+
+.send textarea {
+    width: 100%;
+    height: 100px;
+}
+
+.send .change textarea {
+    height: 2em;
 }
