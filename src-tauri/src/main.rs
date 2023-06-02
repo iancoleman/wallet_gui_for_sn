@@ -3,26 +3,26 @@
 
 use aes_gcm_siv::{
     aead::{Aead, KeyInit},
-    Aes256GcmSiv, Nonce
+    Aes256GcmSiv, Nonce,
 };
 use argon2::{
-    password_hash::{
-        PasswordHash, PasswordHasher, Salt
-    },
-    Argon2
+    password_hash::{PasswordHash, PasswordHasher, Salt},
+    Argon2,
 };
 use bip39::Mnemonic;
-use bls_ckd::{derive_master_sk, derive_child_sk};
+use bls_ckd::{derive_child_sk, derive_master_sk};
 use curv::elliptic::curves::{
+    bls12_381::{g1::GE1, scalar::FieldScalar},
     ECPoint,
-    bls12_381::{
-       g1::GE1,
-       scalar::FieldScalar
-    }
 };
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
-use std::{fs, fs::File, io::{Read, Write}, path::Path};
+use std::{
+    fs,
+    fs::File,
+    io::{Read, Write},
+    path::Path,
+};
 
 // The number of unused addresses to keep in the wallet.
 // This allows the recipient to receive funds without needing to decrypt
@@ -72,7 +72,7 @@ fn mnemonic_from_entropy(entropy: Vec<u8>) -> Result<Mnemonic, String> {
     // convert entropy to mnemonic
     match Mnemonic::from_entropy(&entropy) {
         Ok(m) => Ok(m),
-        Err(_) => Err("Error converting entropy to mnemonic".to_string())
+        Err(_) => Err("Error converting entropy to mnemonic".to_string()),
     }
 }
 
@@ -85,6 +85,7 @@ fn get_wallet_list() -> Result<Vec<String>, String> {
     };
     let mut wallet_names = Vec::<String>::new();
     for wallet_name in paths {
+        #[allow(clippy::single_match)]
         match wallet_name {
             Ok(os_filename) => {
                 match os_filename.file_name().into_string() {
@@ -92,11 +93,11 @@ fn get_wallet_list() -> Result<Vec<String>, String> {
                         // TODO check this is a valid wallet, ie it can be
                         // parsed etc
                         wallet_names.push(filename)
-                    },
+                    }
                     Err(_) => { /* ignore unreadable wallet names */ }
                 }
-            },
-            Err(_) => { /* ignore error, probably should do something */ },
+            }
+            Err(_) => { /* ignore error, probably should do something */ }
         }
     }
     Ok(wallet_names)
@@ -165,14 +166,14 @@ fn decrypt_entropy(encrypted_entropy: Vec<u8>, decryptor: &str) -> Result<Vec<u8
 
 fn stretch_password(password: &str) -> Result<PasswordHash, String> {
     // TODO confirm if fixed salt is ok here
-    let salt = match Salt::from_b64("d2FsbGV0d2FsbGV0d2FsbGV0"){
+    let salt = match Salt::from_b64("d2FsbGV0d2FsbGV0d2FsbGV0") {
         Ok(salt) => salt,
         Err(_) => return Err("Error creating salt for decryption".to_string()),
     };
     let argon2 = Argon2::default();
     match argon2.hash_password(password.as_bytes(), salt) {
         Ok(hash) => Ok(hash),
-        Err(_) => Err("Error hashing password".to_string())
+        Err(_) => Err("Error hashing password".to_string()),
     }
 }
 
@@ -236,17 +237,17 @@ fn create_wallet_from_mnemonic(m: Mnemonic, name: &str, decryptor: &str) {
         addresses.push(address);
     }
     // encrypt the entropy before saving
-    // TODO remove clone and unwrap below
-    let encrypted_entropy = encrypt_entropy(entropy.clone(), decryptor).unwrap();
+    // TODO remove unwrap below
+    let encrypted_entropy = encrypt_entropy(entropy, decryptor).unwrap();
     // TODO remove unwrap below
     let decryptor_hash = stretch_password(decryptor).unwrap().to_string();
     // create a wallet from this info
     let wallet = Wallet {
         name: name.to_string(),
-        addresses: addresses,
-        encrypted_entropy: encrypted_entropy,
+        addresses,
+        encrypted_entropy,
         checksum: Vec::<u8>::new(),
-        decryptor_hash: decryptor_hash,
+        decryptor_hash,
     };
     // serialize the wallet
     // TODO remove the unwrap below
@@ -267,7 +268,11 @@ fn wallet_file_path(name: &str) -> String {
     // exposing the javascript/webview to any secrets as much as possible.
     // TODO remove unwraps below
     ensure_wallet_dir_exists();
-    Path::new(WALLET_DIR).join(name).to_str().unwrap().to_string()
+    Path::new(WALLET_DIR)
+        .join(name)
+        .to_str()
+        .unwrap()
+        .to_string()
 }
 
 fn ensure_wallet_dir_exists() {
@@ -281,21 +286,17 @@ fn read_wallet(name: &str) -> Result<Wallet, String> {
     // open file
     let mut file = match File::open(wallet_location) {
         Ok(file) => file,
-        Err(_) => {
-            return Err("Error opening wallet file".to_string())
-        }
+        Err(_) => return Err("Error opening wallet file".to_string()),
     };
     // read file
     let mut wallet_content = Vec::new();
     match file.read_to_end(&mut wallet_content) {
-        Ok(_) => {},
-        Err(_) => {
-            return Err("Error reading wallet file".to_string())
-        }
+        Ok(_) => {}
+        Err(_) => return Err("Error reading wallet file".to_string()),
     }
     // parse file
     match rmp_serde::from_slice(&wallet_content) {
         Ok(w) => Ok(w),
-        Err(_) => return Err("Error parsing wallet file".to_string())
+        Err(_) => Err("Error parsing wallet file".to_string()),
     }
 }
