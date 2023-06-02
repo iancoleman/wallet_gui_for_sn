@@ -25,6 +25,8 @@ curv-kzen = { version = "0.10", default-features = false, features = [] }
 hex = "0.4.3"
 rand = "0.8.5"
 rmp-serde = "1.1.1"
+sn_dbc = { version = "17.0.0", features = ["serdes"] }
+thiserror = "1.0.23"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
