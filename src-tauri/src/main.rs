@@ -85,6 +85,7 @@ fn get_wallet_list() -> Result<Vec<String>, String> {
     };
     let mut wallet_names = Vec::<String>::new();
     for wallet_name in paths {
+        #[allow(clippy::single_match)]
         match wallet_name {
             Ok(os_filename) => {
                 match os_filename.file_name().into_string() {
@@ -236,17 +237,17 @@ fn create_wallet_from_mnemonic(m: Mnemonic, name: &str, decryptor: &str) {
         addresses.push(address);
     }
     // encrypt the entropy before saving
-    // TODO remove clone and unwrap below
-    let encrypted_entropy = encrypt_entropy(entropy.clone(), decryptor).unwrap();
+    // TODO remove unwrap below
+    let encrypted_entropy = encrypt_entropy(entropy, decryptor).unwrap();
     // TODO remove unwrap below
     let decryptor_hash = stretch_password(decryptor).unwrap().to_string();
     // create a wallet from this info
     let wallet = Wallet {
         name: name.to_string(),
-        addresses: addresses,
-        encrypted_entropy: encrypted_entropy,
+        addresses,
+        encrypted_entropy,
         checksum: Vec::<u8>::new(),
-        decryptor_hash: decryptor_hash,
+        decryptor_hash,
     };
     // serialize the wallet
     // TODO remove the unwrap below
@@ -296,6 +297,6 @@ fn read_wallet(name: &str) -> Result<Wallet, String> {
     // parse file
     match rmp_serde::from_slice(&wallet_content) {
         Ok(w) => Ok(w),
-        Err(_) => return Err("Error parsing wallet file".to_string()),
+        Err(_) => Err("Error parsing wallet file".to_string()),
     }
 }
